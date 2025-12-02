@@ -68,9 +68,22 @@ contract RebaseToken is ERC20 {
      * @param _amount the amount of tokens to mint
      */
     function mint(address _to, uint256 _amount) external {
-        _mintAccuredInterest(_to);
+        _mintAccruedInterest(_to);
         s_userInterestRate[_to] = s_interestRate;
         _mint(_to, _amount);
+    }
+
+    /*
+     * @notice Burn the user tokens when they withdraw from the vault
+     * @param _from the address to burn the tokens from
+     * @param _amount the amount of tokens to burn
+     */
+    function burn(address _from, uint256 _amount) external {
+        if (_amount == type(uint256).max) { // mitagação de dust usada por protocolos como o Aave. Buscar entender
+            _amount = balanceOf(_from);
+        }
+        _mintAccruedInterest(_from);
+        _burn(_from, _amount);
     }
 
     /*
@@ -99,8 +112,26 @@ contract RebaseToken is ERC20 {
 
     }
 
-    function _mintAccuredInterest(address _to) internal {
-        s_userLastUpdateTimeStamp[_to] = block.timestamp;
+    /**
+    * @notice Mint the accrued interest to the user since the last time they interacted with the protocol (e.g. burn, mint, transfer)
+    * @param _user The user to mint the accrued interest to
+    */
+    function _mintAccruedInterest(address _user) internal {
+        // (1) find their current balance of rebase tokens that have been minted to the user -> principle balance
+        uint256 previousPrincipleBalance = super.balanceOf(_user);
+        // (2) calculate their current balance including any interest -> balanceOf
+        uint256 currentBalance = balanceOf(_user);
+    ​
+        // calculate the number of tokens that need to be minted to the user -> (2) - (1)
+        uint256 balanceIncrease = currentBalance - previousPrincipleBalance;
+    ​
+        // set the users last updated timestamp (Effect)
+        s_userLastUpdatedTimestamp[_user] = block.timestamp;
+        
+        // Mint the accrued interest (Interaction)
+        if (balanceIncrease > 0) { // Optimization: only mint if there's interest
+            _mint(_user, balanceIncrease);
+        }
     }
 
     /*
