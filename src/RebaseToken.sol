@@ -28,7 +28,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 
-/*
+/**
  * @title RebaseToken
  * @author João Lyra
  * @notice this is a cross-chain rebase token that incentivizes users to deposit into a vault
@@ -67,7 +67,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         emit InterestRateSet(_newInterestRate);
     }
 
-    /*
+    /** 
      * @notice get the principle balance of a user (the amount of tokens that have actually been minted to the user, not     including any interest that has accrued since the last time the user interacted with the protocol)
      * @param _user the user to get the principle balance for
      * @return the principle balance of the user
@@ -76,7 +76,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         return super.balanceOf(_user);
     }
 
-    /*
+    /**
      * @notice Mint the user tokens when they deposit into the vault
      * @param _to the address to mint the tokens to
      * @param _amount the amount of tokens to mint
@@ -87,7 +87,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         _mint(_to, _amount);
     }
 
-    /*
+    /**
      * @notice Burn the user tokens when they withdraw from the vault
      * @param _from the address to burn the tokens from
      * @param _amount the amount of tokens to burn
@@ -100,7 +100,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         _burn(_from, _amount);
     }
 
-    /*
+    /**
      * @notice calculate the balance for the user including the interest that has accumulated since the last update
      * (principle balance + some interest that has accrued)
      * @param _user the user to calculate the balance for
@@ -112,7 +112,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         return super.balanceOf(_user) * _calculateUserAccumalatedInterestSinceLastUpdate(_user) / PRECISION_FACTOR;
     }
 
-    /*  
+    /** 
      * @notice Transfer tokens from one user to another
      * @param _recipient the address to transfer the tokens to
      * @param _amount the amount of tokens to transfer 
@@ -130,7 +130,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         return super.transfer(_recipient, _amount);
     }
 
-    /*
+    /**
      * @notice Transfer tokens from one user to another
      * @param _sender the address to transfer the tokens from
      * @param _recipient the address to transfer the tokens to
