@@ -35,12 +35,12 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  */
 contract RebaseToken is ERC20 {
 
-    error RebaseTokenInterestRateCanOnlyDecrease();
+    error RebaseToken__InterestRateCanOnlyDecrease(uint256 currentInterestRate, uint256 newInterestRate);
 
     uint256 private constant PRECISION_FACTOR = 1e18;
     uint256 s_interestRate = 5e10;
     mapping(address => uint256) private s_userInterestRate;
-    mapping(address => uint256) private s_userLastUpdateTimeStamp;
+    mapping(address => uint256) private s_userLastUpdatedTimestamp;
 
     event InterestRateSet(uint256 newInterestRate);
 
@@ -60,6 +60,15 @@ contract RebaseToken is ERC20 {
         }
         s_interestRate = _newInterestRate;
         emit InterestRateSet(_newInterestRate);
+    }
+
+    /*
+     * @notice get the principle balance of a user (the amount of tokens that have actually been minted to the user, not     including any interest that has accrued since the last time the user interacted with the protocol)
+     * @param _user the user to get the principle balance for
+     * @return the principle balance of the user
+     */
+    function principleBalanceOf(address _user) external view returns (uint256) {
+        return super.balanceOf(_user);
     }
 
     /*
@@ -98,6 +107,43 @@ contract RebaseToken is ERC20 {
         return super.balanceOf(_user) * _calculateUserAccumalatedInterestSinceLastUpdate(_user) / PRECISION_FACTOR;
     }
 
+    /*  
+     * @notice Transfer tokens from one user to another
+     * @param _recipient the address to transfer the tokens to
+     * @param _amount the amount of tokens to transfer 
+     * @return true if the transfer was successful
+     */
+    function transfer(address _recipient, uint256 _amount) public override returns (bool) {
+        _mintAccruedInterest(msg.sender);
+        _mintAccruedInterest(_recipient);
+        if (_amount == type(uint256).max) {
+            _amount = balanceOf(msg.sender);
+        }
+        if (balanceOf(_recipient) == 0) {
+            s_userInterestRate[_recipient] = s_userInterestRate[msg.sender];
+        }
+        return super.transfer(_recipient, _amount);
+    }
+
+    /*
+     * @notice Transfer tokens from one user to another
+     * @param _sender the address to transfer the tokens from
+     * @param _recipient the address to transfer the tokens to
+     * @param _amount the amount of tokens to transfer 
+     * @return true if the transfer was successful
+     */
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public override returns (bool) {
+        _mintAccruedInterest(_sender);
+        _mintAccruedInterest(_recipient);
+        if (_amount == type(uint256).max) {
+            _amount = balanceOf(_sender);
+        }
+        if (balanceOf(_recipient) == 0) {
+            s_userInterestRate[_recipient] = s_userInterestRate[_sender];
+        }
+        return super.transferFrom(_sender, _recipient, _amount);
+    }
+
     function _calculateUserAccumalatedInterestSinceLastUpdate(address _user) internal view returns (uint256 linearInterest) {
         // we need to calculate the interest that has accumulated since the last update
         // this is going to be linear growth with time
@@ -107,7 +153,7 @@ contract RebaseToken is ERC20 {
         // interest rate is 0.5 tokens per second
         // time elapsed is 2 seconds
         // 10 + (10 * 0.5 * 2) = 20 tokens
-        uint256 timeElapsed = block.timestamp - s_userLastUpdateTimeStamp[_user];
+        uint256 timeElapsed = block.timestamp - s_userLastUpdatedTimestamp[_user];
         linearInterest = PRECISION_FACTOR + (s_userInterestRate[_user] * timeElapsed);
 
     }
@@ -121,10 +167,10 @@ contract RebaseToken is ERC20 {
         uint256 previousPrincipleBalance = super.balanceOf(_user);
         // (2) calculate their current balance including any interest -> balanceOf
         uint256 currentBalance = balanceOf(_user);
-    ​
+    
         // calculate the number of tokens that need to be minted to the user -> (2) - (1)
         uint256 balanceIncrease = currentBalance - previousPrincipleBalance;
-    ​
+    
         // set the users last updated timestamp (Effect)
         s_userLastUpdatedTimestamp[_user] = block.timestamp;
         
@@ -143,4 +189,11 @@ contract RebaseToken is ERC20 {
         return s_userInterestRate[_user];
     }
 
+    /*
+     * @notice Get the interest rate that is currently set for the contract. Any future depositers will receive this interest rate
+     * @return the interest rate
+     */
+    function getInterestRate() external view returns (uint256) {
+        return s_interestRate;
+    }
 }
