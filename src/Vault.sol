@@ -3,6 +3,7 @@
 pragma solidity ^0.8.24;
 
 import {IRebaseToken} from "./interfaces/IRebaseToken.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Vault {
     // we need to pass the token address in the constructor
@@ -37,6 +38,9 @@ contract Vault {
      * @param _amount The amount of tokens to redeem
      */
     function redeem(uint256 _amount) external {
+        if (_amount == type(uint256).max) {
+            _amount = i_rebaseToken.balanceOf(msg.sender); // mitagação de dust usada por protocolos como o Aave. Buscar entender
+        }
         // burn the user's tokens
         i_rebaseToken.burn(msg.sender, _amount);
         // send the user ETH
