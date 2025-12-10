@@ -21,16 +21,16 @@ contract RebaseTokenVaultTest is Test {
         rebaseToken = new RebaseToken();
         vault = new Vault(IRebaseToken(address(rebaseToken)));
         rebaseToken.grantMintAndBurnRole(address(vault));
-        (bool success, ) = payable(address(vault)).call{value: 1e18}("");
+        (bool success,) = payable(address(vault)).call{value: 1e18}("");
         vm.stopPrank();
     }
 
     function addRewardsToVault(uint256 rewardAmount) public {
-        (bool success, ) = payable(address(vault)).call{value: rewardAmount}("");
+        (bool success,) = payable(address(vault)).call{value: rewardAmount}("");
     }
 
     function testDepositLinear(uint256 amount) public {
-        amount = bound(amount, 1e5, type(uint96).max); 
+        amount = bound(amount, 1e5, type(uint96).max);
         // 1. deposit
         vm.startPrank(user);
         vm.deal(user, amount);
@@ -53,7 +53,7 @@ contract RebaseTokenVaultTest is Test {
     }
 
     function testRedeemStraightAway(uint256 amount) public {
-        amount = bound(amount, 1e5, type(uint96).max); 
+        amount = bound(amount, 1e5, type(uint96).max);
         // 1. deposit
         vm.startPrank(user);
         vm.deal(user, amount);
@@ -65,7 +65,6 @@ contract RebaseTokenVaultTest is Test {
         console.log("End ETH Balance: ", endEthBalance);
         assertEq(endEthBalance, amount);
     }
-    
 
     function testRedeemAfterTimeHasPassed(uint256 depositAmount, uint256 time) public {
         time = bound(time, 1000, type(uint96).max); // this is a crazy number of years - 2^96 seconds is a lot
@@ -138,7 +137,7 @@ contract RebaseTokenVaultTest is Test {
     function testCannotCallMintAndburn() public {
         vm.prank(user);
         vm.expectPartialRevert(bytes4(IAccessControl.AccessControlUnauthorizedAccount.selector));
-        rebaseToken.mint(user, 1000);
+        rebaseToken.mint(user, 1000, rebaseToken.getInterestRate());
 
         vm.prank(user);
         vm.expectPartialRevert(bytes4(IAccessControl.AccessControlUnauthorizedAccount.selector));

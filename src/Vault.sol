@@ -46,7 +46,7 @@ contract Vault {
         i_rebaseToken.burn(msg.sender, _amount);
         // send the user ETH
         // payable(msg.sender).transfer(_amount);
-        (bool success, ) = payable(msg.sender).call{value: _amount}("");
+        (bool success,) = payable(msg.sender).call{value: _amount}("");
         if (!success) {
             revert Vault__RedeemFailed();
         }
